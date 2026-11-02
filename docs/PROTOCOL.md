@@ -34,3 +34,12 @@ Core owns the outer process group and cancellation. The wrapper must start the
 JVM inside that group rather than creating a separate group. On direct graceful
 termination the wrapper also cancels its worker context. Windows process-tree
 behavior is not claimed by the current macOS-first acceptance.
+
+## Local package metadata
+
+package-manifest returns schemaVersion 1, engine (the describe identity), executable
+bin/scryer-java-engine, and the build GOOS/GOARCH as os/arch. scripts/build writes it
+as engine.json in the distribution. Both package variants include it. Core validates
+this document and the copied executable's describe identity before persisting an
+installation. It describes a tool package, not Java source facts or a new version
+of the scan/analyze report contract.

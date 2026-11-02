@@ -9,3 +9,5 @@ cp build/install/scryer-java/lib/*.jar build/install/scryer-java-engine/lib/java
 go build -trimpath -o build/install/scryer-java-engine/bin/scryer-java-engine.new ./cmd/scryer-java-engine
 mv -f build/install/scryer-java-engine/bin/scryer-java-engine.new build/install/scryer-java-engine/bin/scryer-java-engine
 ln -sfn ../install/scryer-java-engine/bin/scryer-java-engine build/bin/scryer-java-engine
+build/install/scryer-java-engine/bin/scryer-java-engine package-manifest > build/install/scryer-java-engine/engine.json
+cp README.md LICENSE build/install/scryer-java-engine/

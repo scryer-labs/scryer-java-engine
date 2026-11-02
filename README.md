@@ -41,10 +41,25 @@ selection is SCRYER_ANALYZER_JAVA_HOME, bundled runtime, then JAVA_HOME/PATH.
 SCRYER_JAVA_HOME independently selects the target project's JVM. Source builds
 require developer toolchains; a bundled package needs no separately installed Go
 or Java for the engine itself. Target builds/tests may still need their own tools.
-GitHub Release publishing and persistent engine installation remain future work.
+GitHub Release publishing and release/source installation remain future work.
 
-Scryer's engine install/list/uninstall commands still produce non-persistent probe
-receipts: they call describe, but do not copy/delete packages or store inventory.
+Each built/extracted package now includes engine.json (schemaVersion, identity,
+relative executable, OS and architecture). Install the directory through Core:
+
+```sh
+scryer engine install java --from /path/to/extracted/package
+scryer engine list --json
+scryer project scan /path/to/project --static --json
+scryer engine uninstall java
+```
+
+Core copies the complete package into ~/.config/scryer by default (including on
+macOS), with an optional SCRYER_HOME override; installed
+operation no longer depends on the source checkout or a path override. Existing
+installs require uninstall before reinstalling. Install/list/uninstall are persistent.
+The wrapper's package-manifest operation generates metadata during scripts/build;
+it is separate from describe and scan/analyze fact data. Remote/source installation
+and GitHub Release publication are still deferred.
 
 ## Verification and boundaries
 

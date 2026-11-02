@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"runtime"
 
 	"github.com/scryer-labs/scryer-java-engine/internal/worker"
 )
@@ -31,8 +32,8 @@ func Run(ctx context.Context, args []string, in io.Reader, out, diagnostics io.W
 		}
 		return 0
 	}
-	if len(args) != 1 || args[0] != "describe" {
-		fmt.Fprintln(diagnostics, "scryer-java-engine: expected describe or execute")
+	if len(args) != 1 || (args[0] != "describe" && args[0] != "package-manifest") {
+		fmt.Fprintln(diagnostics, "scryer-java-engine: expected describe, package-manifest or execute")
 		return 2
 	}
 	identity := Identity{
@@ -43,7 +44,17 @@ func Run(ctx context.Context, args []string, in io.Reader, out, diagnostics io.W
 		Source:          "github.com/scryer-labs/scryer-java-engine",
 		Mock:            false,
 	}
-	if err := json.NewEncoder(out).Encode(identity); err != nil {
+	var response any = identity
+	if args[0] == "package-manifest" {
+		response = struct {
+			SchemaVersion int      `json:"schemaVersion"`
+			Engine        Identity `json:"engine"`
+			Executable    string   `json:"executable"`
+			OS            string   `json:"os"`
+			Arch          string   `json:"arch"`
+		}{1, identity, "bin/scryer-java-engine", runtime.GOOS, runtime.GOARCH}
+	}
+	if err := json.NewEncoder(out).Encode(response); err != nil {
 		fmt.Fprintln(diagnostics, "scryer-java-engine:", err)
 		return 1
 	}

@@ -18,7 +18,7 @@ package_dir=$(mktemp -d "${TMPDIR:-/tmp}/scryer-package.XXXXXX")
 trap 'rm -rf "$package_dir"' EXIT HUP INT TERM
 mkdir -p "$package_dir/$name"
 cp -R build/install/scryer-java-engine/bin build/install/scryer-java-engine/lib "$package_dir/$name/"
-cp README.md LICENSE "$package_dir/$name/"
+cp README.md LICENSE build/install/scryer-java-engine/engine.json "$package_dir/$name/"
 if [ "$with_runtime" = true ]; then
   # Resolve the host JDK; the resulting package targets this OS/architecture only.
   if [ -n "${JAVA_HOME:-}" ]; then

@@ -34,3 +34,23 @@ func Test_should_reject_unknown_operations_when_operation_is_not_supported(t *te
 		}
 	}
 }
+
+func Test_should_describe_relocatable_package_when_manifest_is_requested(t *testing.T) {
+	var out, diagnostics bytes.Buffer
+	if status := Run(context.Background(), []string{"package-manifest"}, nil, &out, &diagnostics); status != 0 {
+		t.Fatal(status, diagnostics.String())
+	}
+	var manifest struct {
+		SchemaVersion int      `json:"schemaVersion"`
+		Engine        Identity `json:"engine"`
+		Executable    string   `json:"executable"`
+		OS            string   `json:"os"`
+		Arch          string   `json:"arch"`
+	}
+	if err := json.Unmarshal(out.Bytes(), &manifest); err != nil {
+		t.Fatal(err)
+	}
+	if manifest.SchemaVersion != 1 || manifest.Engine.ID != "java" || manifest.Engine.Mock || manifest.Executable != "bin/scryer-java-engine" || manifest.OS == "" || manifest.Arch == "" {
+		t.Fatalf("invalid package manifest: %+v", manifest)
+	}
+}

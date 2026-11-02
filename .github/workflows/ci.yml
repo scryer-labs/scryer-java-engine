@@ -55,6 +55,8 @@ jobs:
           done
           for launcher in "$package_check_dir"/*/*/bin/scryer-java-engine; do
             "$launcher" describe > "$package_check_dir/identity.json"
+            test -f "$(dirname "$launcher")/../engine.json"
+            python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d["schemaVersion"]==1 and d["engine"]["id"]=="java" and d["executable"]=="bin/scryer-java-engine"' "$(dirname "$launcher")/../engine.json"
             python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d["id"]=="java" and d["mock"] is False' "$package_check_dir/identity.json"
             printf '{"protocolVersion":1,"requestId":"package-check","stack":"java","operation":"scan","scan":{"repository":"%s","static":true}}' "$PWD" > "$package_check_dir/request.json"
             if [ -x "$(dirname "$launcher")/../runtime/bin/java" ]; then
