@@ -17,6 +17,11 @@ export SCRYER_ENGINE_JAVA="$PWD/build/bin/scryer-java-engine"
 /path/to/scryer project analyze /path/to/java-project --before HEAD~1 --after HEAD
 ```
 
+Gradle creates the internal JVM-only intermediate distribution at
+`build/install/java-worker/`. Its jars are copied into the complete engine; the Go
+wrapper starts Java directly and does not invoke the Gradle-generated worker launcher.
+The installed engine has no dependency on this intermediate directory.
+
 `build/bin/scryer-java-engine` points into the complete development distribution at
 `build/install/scryer-java-engine/`. Keep its bin/ and lib/java/ directories together.
 Alternatively put the distribution's bin/ on PATH. A standalone `go build` builds

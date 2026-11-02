@@ -15,14 +15,14 @@ kotlin {
     }
 }
 application {
-    applicationName = "scryer-java"
+    applicationName = "java-worker"
     mainClass.set("com.edwardnoaland.scryer.worker.WorkerKt")
 }
 sourceSets {
     named("main") { resources.setSrcDirs(listOf("analyzers/java/src/main/resources")) }
     named("test") { resources.setSrcDirs(listOf("analyzers/java/src/test/resources")) }
 }
-distributions { named("main") { distributionBaseName = "scryer-java" } }
+distributions { named("main") { distributionBaseName = "java-worker" } }
 tasks.named<JavaExec>("run") { standardInput = System.`in` }
 
 dependencies {
