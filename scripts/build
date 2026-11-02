@@ -1,0 +1,11 @@
+#!/bin/sh
+set -eu
+root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+cd "$root"
+./gradlew --no-daemon --console=plain -g "$root/.tooling/gradle" --project-cache-dir "$root/.tooling/project-cache" installDist
+mkdir -p build/install/scryer-java-engine/bin build/install/scryer-java-engine/lib/java build/bin
+rm -f build/install/scryer-java-engine/lib/java/*.jar
+cp build/install/scryer-java/lib/*.jar build/install/scryer-java-engine/lib/java/
+go build -trimpath -o build/install/scryer-java-engine/bin/scryer-java-engine.new ./cmd/scryer-java-engine
+mv -f build/install/scryer-java-engine/bin/scryer-java-engine.new build/install/scryer-java-engine/bin/scryer-java-engine
+ln -sfn ../install/scryer-java-engine/bin/scryer-java-engine build/bin/scryer-java-engine
