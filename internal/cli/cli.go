@@ -9,6 +9,7 @@ import (
 	"runtime"
 
 	"github.com/scryer-labs/scryer-java-engine/internal/worker"
+	"github.com/spf13/cobra"
 )
 
 type Identity struct {
@@ -21,43 +22,61 @@ type Identity struct {
 }
 
 func Run(ctx context.Context, args []string, in io.Reader, out, diagnostics io.Writer) int {
-	if len(args) == 0 || (len(args) == 1 && (args[0] == "--help" || args[0] == "help")) {
-		fmt.Fprintln(out, "Usage: scryer-java-engine describe | execute\nexecute reads one v1 scan/analyze JSON request from stdin and writes the JVM response.")
-		return 0
+	exitCode := 2
+	root := &cobra.Command{
+		Use:               "scryer-java-engine",
+		Short:             "Run the standalone Java engine",
+		Args:              cobra.NoArgs,
+		RunE:              func(cmd *cobra.Command, _ []string) error { return cmd.Help() },
+		SilenceErrors:     true,
+		SilenceUsage:      true,
+		CompletionOptions: cobra.CompletionOptions{DisableDefaultCmd: true},
 	}
-	if len(args) == 1 && args[0] == "execute" {
-		if err := worker.Execute(ctx, in, out, diagnostics); err != nil {
-			fmt.Fprintln(diagnostics, "scryer-java-engine:", err)
-			return 1
-		}
-		return 0
-	}
-	if len(args) != 1 || (args[0] != "describe" && args[0] != "package-manifest") {
-		fmt.Fprintln(diagnostics, "scryer-java-engine: expected describe, package-manifest or execute")
-		return 2
-	}
+	// A nil slice tells Cobra to read the host process arguments.
+	root.SetArgs(append([]string{}, args...))
+	root.SetIn(in)
+	root.SetOut(out)
+	root.SetErr(diagnostics)
+
 	identity := Identity{
 		ProtocolVersion: 1,
 		ID:              "java",
 		Name:            "Scryer Java Engine",
 		Version:         "0.0.0-dev",
 		Source:          "github.com/scryer-labs/scryer-java-engine",
-		Mock:            false,
 	}
-	var response any = identity
-	if args[0] == "package-manifest" {
-		response = struct {
-			SchemaVersion int      `json:"schemaVersion"`
-			Engine        Identity `json:"engine"`
-			Library       string   `json:"library,omitempty"`
-			Executable    string   `json:"executable"`
-			OS            string   `json:"os"`
-			Arch          string   `json:"arch"`
-		}{1, identity, libraryPath(), "bin/scryer-java-engine", runtime.GOOS, runtime.GOARCH}
+	manifest := struct {
+		SchemaVersion int      `json:"schemaVersion"`
+		Engine        Identity `json:"engine"`
+		Library       string   `json:"library,omitempty"`
+		Executable    string   `json:"executable"`
+		OS            string   `json:"os"`
+		Arch          string   `json:"arch"`
+	}{1, identity, libraryPath(), "bin/scryer-java-engine", runtime.GOOS, runtime.GOARCH}
+
+	command := func(name, description string, run func(*cobra.Command) error) *cobra.Command {
+		return &cobra.Command{
+			Use: name, Short: description, Args: cobra.NoArgs,
+			RunE: func(cmd *cobra.Command, _ []string) error {
+				exitCode = 1
+				return run(cmd)
+			},
+		}
 	}
-	if err := json.NewEncoder(out).Encode(response); err != nil {
-		fmt.Fprintln(diagnostics, "scryer-java-engine:", err)
-		return 1
+	root.AddCommand(
+		command("describe", "Print the engine identity as JSON", func(cmd *cobra.Command) error {
+			return json.NewEncoder(cmd.OutOrStdout()).Encode(identity)
+		}),
+		command("package-manifest", "Print the engine package manifest as JSON", func(cmd *cobra.Command) error {
+			return json.NewEncoder(cmd.OutOrStdout()).Encode(manifest)
+		}),
+		command("execute", "Read one JSON request from stdin and print the JVM response", func(cmd *cobra.Command) error {
+			return worker.Execute(cmd.Context(), cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr())
+		}),
+	)
+	if err := root.ExecuteContext(ctx); err != nil {
+		fmt.Fprintln(root.ErrOrStderr(), "scryer-java-engine:", err)
+		return exitCode
 	}
 	return 0
 }
