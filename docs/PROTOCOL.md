@@ -1,7 +1,11 @@
-# Engine process protocol v1
+# Engine JSON protocol v1
 
-No shared Go package is required. Core starts `scryer-java-engine execute`, writes
-one UTF-8 JSON request to stdin and closes it. The wrapper starts its JVM and
+Core loads the installed shared library and calls `execute_v1` with the JSON
+envelope. The library locates its JVM worker relative to its own path. The ABI
+header is `cmd/java-engine-abi/scryer_engine_v1.h`.
+
+For standalone use, run `scryer-java-engine execute`, write
+one UTF-8 JSON request to stdin and close it. The wrapper starts its JVM and
 forwards all streams. Stdout contains exactly one JSON response, framed by EOF;
 progress/errors use stderr. The worker limits requests to 1 MiB. Output-file,
 color, HTML and Markdown parameters never enter the engine.

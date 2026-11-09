@@ -9,6 +9,14 @@ cp build/install/java-worker/lib/*.jar build/install/scryer-java-engine/lib/java
 go build -trimpath -o build/install/scryer-java-engine/bin/scryer-java-engine.new ./cmd/scryer-java-engine
 mv -f build/install/scryer-java-engine/bin/scryer-java-engine.new build/install/scryer-java-engine/bin/scryer-java-engine
 ln -sfn ../install/scryer-java-engine/bin/scryer-java-engine build/bin/scryer-java-engine
+case "$(go env GOOS)" in
+  darwin) extension=dylib ;;
+  linux) extension=so ;;
+  *) echo "Java engine ABI build supports macOS and Linux" >&2; exit 1 ;;
+esac
+library="build/install/scryer-java-engine/bin/libscryer-java-engine.$extension"
+CGO_ENABLED=1 go build -trimpath -buildmode=c-shared -o "$library" ./cmd/java-engine-abi
+rm -f "${library%.*}.h"
 build/install/scryer-java-engine/bin/scryer-java-engine package-manifest > build/install/scryer-java-engine/engine.json
 cp README.md LICENSE build/install/scryer-java-engine/
 # Remove the obsolete JVM-only distribution after the renamed worker was assembled.

@@ -14,4 +14,4 @@ Workspace linkage plan: scryer-lab--scryer-java-engine-integration.
 Read the current manifest revision and invoke the plan through Orrery's API.
 Acceptance order is Scryer Core plan, engine project plan, then workspace integration. Integration validates persistent installation/source independence, Core reporting, Java tests, snapshots and cancellation. Seven-project provider scans belong to modernization--scryer-orrery-integration in test_workspace, run after the linkage plan installs the current bundled engine for ordinary discovery. Keep the plan aligned with CI; use only the plan for test/build acceptance.
 
-The current boundary is Core → Go wrapper → JVM. C ABI shared-library loading is a future pair experiment, not the extraction implementation.
+The installed engine uses a C ABI shared library in Core and launches a JVM worker in its own process group. Keep the header in cmd/java-engine-abi aligned with Core’s canonical header.

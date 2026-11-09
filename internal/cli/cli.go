@@ -49,14 +49,26 @@ func Run(ctx context.Context, args []string, in io.Reader, out, diagnostics io.W
 		response = struct {
 			SchemaVersion int      `json:"schemaVersion"`
 			Engine        Identity `json:"engine"`
+			Library       string   `json:"library,omitempty"`
 			Executable    string   `json:"executable"`
 			OS            string   `json:"os"`
 			Arch          string   `json:"arch"`
-		}{1, identity, "bin/scryer-java-engine", runtime.GOOS, runtime.GOARCH}
+		}{1, identity, libraryPath(), "bin/scryer-java-engine", runtime.GOOS, runtime.GOARCH}
 	}
 	if err := json.NewEncoder(out).Encode(response); err != nil {
 		fmt.Fprintln(diagnostics, "scryer-java-engine:", err)
 		return 1
 	}
 	return 0
+}
+
+func libraryPath() string {
+	switch runtime.GOOS {
+	case "darwin":
+		return "bin/libscryer-java-engine.dylib"
+	case "linux":
+		return "bin/libscryer-java-engine.so"
+	default:
+		return ""
+	}
 }
