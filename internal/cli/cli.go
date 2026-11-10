@@ -45,14 +45,20 @@ func Run(ctx context.Context, args []string, in io.Reader, out, diagnostics io.W
 		Version:         "0.0.0-dev",
 		Source:          "github.com/scryer-labs/scryer-java-engine",
 	}
+	capabilities := struct {
+		Languages  []string `json:"languages"`
+		Operations []string `json:"operations"`
+		ScanFacts  []string `json:"scanFacts"`
+	}{[]string{"Java"}, []string{"scan", "analyze"}, []string{"dependencies"}}
 	manifest := struct {
+		Capabilities  any      `json:"capabilities"`
 		SchemaVersion int      `json:"schemaVersion"`
 		Engine        Identity `json:"engine"`
 		Library       string   `json:"library,omitempty"`
 		Executable    string   `json:"executable"`
 		OS            string   `json:"os"`
 		Arch          string   `json:"arch"`
-	}{1, identity, libraryPath(), "bin/scryer-java-engine", runtime.GOOS, runtime.GOARCH}
+	}{capabilities, 1, identity, libraryPath(), "bin/scryer-java-engine", runtime.GOOS, runtime.GOARCH}
 
 	command := func(name, description string, run func(*cobra.Command) error) *cobra.Command {
 		return &cobra.Command{

@@ -31,13 +31,33 @@ fun main() {
         response["report"] = when (request.requiredText("operation")) {
             "scan" -> {
                 val input = requireNotNull(request["scan"]) { "Missing scan request" }
+                val selection = input["facts"]
+                if (selection != null) {
+                    require(selection.isArray && selection.all { it.isTextual }) { "facts must be an array of strings" }
+                    val unsupported = selection.map { it.asText() }.filter { it != "dependencies" }
+                    if (unsupported.isNotEmpty()) {
+                        throw UnsupportedCapability("UNSUPPORTED_FACT", "Java scan does not support: ${unsupported.joinToString()}")
+                    }
+                }
                 val facts = ScanService(resolver = DependencyResolver(progress = progress)).scan(
                     Path.of(input.requiredText("repository")), input["static"]?.asBoolean() ?: false, input.buildTool())
                 val enriched = if (input["remoteList"]?.asBoolean() == true) facts.copy(remoteVersions = RemoteVersionCollector(progress = progress)
                     .collect(directDependencies(facts)) { scopedSelectedVersions(facts, it) },
                     toolUpdates = ToolUpdateCollector(progress = progress).collect(facts)) else facts
                 // Public contracts use filesystem paths, not Jackson's default Path URI representation.
-                jsonMapper.valueToTree<ObjectNode>(enriched).put("root", enriched.root.toString())
+                val report = jsonMapper.valueToTree<ObjectNode>(enriched).put("root", enriched.root.toString())
+                if (selection != null && !selection.isEmpty) {
+                    mapOf(
+                        "schemaVersion" to 1,
+                        "root" to enriched.root.toString(),
+                        "facts" to mapOf("dependencies" to mapOf(
+                            "builds" to report["builds"],
+                            "modules" to report["modules"],
+                            "declarations" to report["dependencies"],
+                            "resolution" to report["resolution"],
+                        )),
+                    )
+                } else report
             }
             "analyze" -> {
                 val input = requireNotNull(request["analyze"]) { "Missing analyze request" }
@@ -52,18 +72,20 @@ fun main() {
                     testCommand = input["testCommand"]?.asText()?.takeIf { it.isNotBlank() }, buildTool = input.buildTool())
                 buildAnalyzeReport(result)
             }
-            else -> error("Unsupported operation")
+            else -> throw UnsupportedCapability("UNSUPPORTED_OPERATION", "Java engine does not support operation ${request.requiredText("operation")}")
         }
         response["error"] = null
     } catch (exception: Exception) {
-        exception.printStackTrace(System.err)
+        if (exception !is UnsupportedCapability) exception.printStackTrace(System.err)
         response["requestId"] = request?.get("requestId")?.asText().orEmpty()
         response["operation"] = request?.get("operation")?.asText().orEmpty()
         response["report"] = null
-        response["error"] = mapOf("code" to "JAVA_ANALYZER_ERROR", "message" to (exception.message ?: exception.javaClass.simpleName))
+        response["error"] = mapOf("code" to ((exception as? UnsupportedCapability)?.code ?: "JAVA_ANALYZER_ERROR"), "message" to (exception.message ?: exception.javaClass.simpleName))
     }
     System.out.println(jsonMapper.writeValueAsString(response))
 }
+
+private class UnsupportedCapability(val code: String, message: String) : IllegalArgumentException(message)
 
 private fun JsonNode.requiredText(name: String): String {
     val value = get(name)

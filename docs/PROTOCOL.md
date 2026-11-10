@@ -47,3 +47,8 @@ as engine.json in the distribution. Both package variants include it. Core valid
 this document and the copied executable's describe identity before persisting an
 installation. It describes a tool package, not Java source facts or a new version
 of the scan/analyze report contract.
+
+The package manifest declares Java as its language, scan and analyze as its
+operations, and dependencies as its selectable scan fact. A nonempty
+`scan.facts` array selects a report with a `facts` object. Java reports
+`UNSUPPORTED_FACT` and `UNSUPPORTED_OPERATION` as JSON protocol errors.
