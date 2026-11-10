@@ -12,9 +12,10 @@ type Identity struct {
 }
 
 type Capabilities struct {
-	Languages  []string `json:"languages"`
-	Operations []string `json:"operations"`
-	ScanFacts  []string `json:"scanFacts"`
+	ResolveDependencies bool     `json:"resolveDependencies,omitempty"`
+	Languages           []string `json:"languages"`
+	Operations          []string `json:"operations"`
+	ScanFacts           []string `json:"scanFacts"`
 }
 
 type Manifest struct {
@@ -29,9 +30,10 @@ type Manifest struct {
 
 func capabilities() Capabilities {
 	return Capabilities{
-		Languages:  []string{"Java"},
-		Operations: []string{"scan", "analyze"},
-		ScanFacts:  []string{"dependencies"},
+		ResolveDependencies: true,
+		Languages:           []string{"Java"},
+		Operations:          []string{"scan", "analyze"},
+		ScanFacts:           []string{"dependencies"},
 	}
 }
 
