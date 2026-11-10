@@ -20,7 +20,7 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/scryer-labs/scryer-java-engine/internal/worker"
+	"github.com/scryer-labs/scryer-java-engine/internal/engine"
 )
 
 var active struct {
@@ -52,15 +52,13 @@ func readView(view C.scryer_view_v1, limit C.size_t) ([]byte, bool) {
 
 //export execute_v1
 func execute_v1(input C.scryer_view_v1) C.scryer_result_v1 {
-	request, ok := readView(input, 1024*1024)
+	data, ok := readView(input, engine.MaxRequestBytes)
 	if !ok {
 		return failure(C.SCRYER_ERROR_V1, "invalid request buffer")
 	}
-	var envelope struct {
-		RequestID string `json:"requestId"`
-	}
-	if err := json.Unmarshal(request, &envelope); err != nil || envelope.RequestID == "" || len(envelope.RequestID) > 256 {
-		return failure(C.SCRYER_ERROR_V1, "invalid request JSON or requestId")
+	request, err := engine.ParseRequest(data)
+	if err != nil {
+		return failure(C.SCRYER_ERROR_V1, err.Error())
 	}
 
 	active.Lock()
@@ -69,16 +67,15 @@ func execute_v1(input C.scryer_view_v1) C.scryer_result_v1 {
 		return failure(C.SCRYER_BUSY_V1, "Java engine already has an active task")
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	active.id, active.cancel = envelope.RequestID, cancel
+	active.id, active.cancel = request.RequestID, cancel
 	active.Unlock()
 
 	var output bytes.Buffer
-	var err error
 	path := C.java_engine_library_path()
 	if path == nil {
 		err = errors.New("cannot locate Java engine library")
 	} else {
-		err = worker.ExecuteAt(ctx, C.GoString(path), bytes.NewReader(request), &output, os.Stderr, true)
+		err = request.Execute(ctx, C.GoString(path), &output, os.Stderr, true)
 	}
 	active.Lock()
 	cancelled := ctx.Err() != nil
@@ -97,7 +94,7 @@ func execute_v1(input C.scryer_view_v1) C.scryer_result_v1 {
 
 //export cancel_v1
 func cancel_v1(input C.scryer_view_v1) C.bool {
-	id, ok := readView(input, 256)
+	id, ok := readView(input, engine.MaxRequestIDBytes)
 	if !ok {
 		return false
 	}

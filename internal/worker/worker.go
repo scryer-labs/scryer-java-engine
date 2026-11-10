@@ -12,14 +12,6 @@ import (
 	"time"
 )
 
-func Execute(ctx context.Context, in io.Reader, out, diagnostics io.Writer) error {
-	installation, err := os.Executable()
-	if err != nil {
-		return err
-	}
-	return ExecuteAt(ctx, installation, in, out, diagnostics, false)
-}
-
 // ExecuteAt resolves runtime and jars relative to the launcher or shared library.
 func ExecuteAt(ctx context.Context, installation string, in io.Reader, out, diagnostics io.Writer, ownGroup bool) error {
 	installation, err := filepath.EvalSymlinks(installation)

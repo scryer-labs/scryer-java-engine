@@ -32,13 +32,6 @@ fun main() {
             "scan" -> {
                 val input = requireNotNull(request["scan"]) { "Missing scan request" }
                 val selection = input["facts"]
-                if (selection != null) {
-                    require(selection.isArray && selection.all { it.isTextual }) { "facts must be an array of strings" }
-                    val unsupported = selection.map { it.asText() }.filter { it != "dependencies" }
-                    if (unsupported.isNotEmpty()) {
-                        throw UnsupportedCapability("UNSUPPORTED_FACT", "Java scan does not support: ${unsupported.joinToString()}")
-                    }
-                }
                 val facts = ScanService(resolver = DependencyResolver(progress = progress)).scan(
                     Path.of(input.requiredText("repository")), input["static"]?.asBoolean() ?: false, input.buildTool())
                 val enriched = if (input["remoteList"]?.asBoolean() == true) facts.copy(remoteVersions = RemoteVersionCollector(progress = progress)
@@ -72,20 +65,18 @@ fun main() {
                     testCommand = input["testCommand"]?.asText()?.takeIf { it.isNotBlank() }, buildTool = input.buildTool())
                 buildAnalyzeReport(result)
             }
-            else -> throw UnsupportedCapability("UNSUPPORTED_OPERATION", "Java engine does not support operation ${request.requiredText("operation")}")
+            else -> error("Unexpected worker operation")
         }
         response["error"] = null
     } catch (exception: Exception) {
-        if (exception !is UnsupportedCapability) exception.printStackTrace(System.err)
+        exception.printStackTrace(System.err)
         response["requestId"] = request?.get("requestId")?.asText().orEmpty()
         response["operation"] = request?.get("operation")?.asText().orEmpty()
         response["report"] = null
-        response["error"] = mapOf("code" to ((exception as? UnsupportedCapability)?.code ?: "JAVA_ANALYZER_ERROR"), "message" to (exception.message ?: exception.javaClass.simpleName))
+        response["error"] = mapOf("code" to "JAVA_ANALYZER_ERROR", "message" to (exception.message ?: exception.javaClass.simpleName))
     }
     System.out.println(jsonMapper.writeValueAsString(response))
 }
-
-private class UnsupportedCapability(val code: String, message: String) : IllegalArgumentException(message)
 
 private fun JsonNode.requiredText(name: String): String {
     val value = get(name)

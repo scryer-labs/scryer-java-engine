@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"io"
 	"testing"
+
+	"github.com/scryer-labs/scryer-java-engine/internal/engine"
 )
 
 func Test_should_return_one_engine_identity_when_describe_is_requested(t *testing.T) {
@@ -14,7 +16,7 @@ func Test_should_return_one_engine_identity_when_describe_is_requested(t *testin
 		t.Fatalf("unexpected exit status: %d", status)
 	}
 	decoder := json.NewDecoder(&out)
-	var identity Identity
+	var identity engine.Identity
 	if err := decoder.Decode(&identity); err != nil {
 		t.Fatal(err)
 	}
@@ -40,13 +42,7 @@ func Test_should_describe_relocatable_package_when_manifest_is_requested(t *test
 	if status := Run(context.Background(), []string{"package-manifest"}, nil, &out, &diagnostics); status != 0 {
 		t.Fatal(status, diagnostics.String())
 	}
-	var manifest struct {
-		SchemaVersion int      `json:"schemaVersion"`
-		Engine        Identity `json:"engine"`
-		Executable    string   `json:"executable"`
-		OS            string   `json:"os"`
-		Arch          string   `json:"arch"`
-	}
+	var manifest engine.Manifest
 	if err := json.Unmarshal(out.Bytes(), &manifest); err != nil {
 		t.Fatal(err)
 	}

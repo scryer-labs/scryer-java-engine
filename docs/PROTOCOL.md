@@ -5,9 +5,10 @@ envelope. The library locates its JVM worker relative to its own path. The ABI
 header is `cmd/java-engine-abi/scryer_engine_v1.h`.
 
 For standalone use, run `scryer-java-engine execute`, write
-one UTF-8 JSON request to stdin and close it. The wrapper starts its JVM and
-forwards all streams. Stdout contains exactly one JSON response, framed by EOF;
-progress/errors use stderr. The worker limits requests to 1 MiB. Output-file,
+one UTF-8 JSON request to stdin and close it. The engine starts its JVM for
+supported requests. Stdout contains exactly one JSON response for a valid
+envelope, framed by EOF. Progress and diagnostics use stderr. Both entrypoints
+limit requests to 1 MiB and request IDs to 256 bytes. Output-file,
 color, HTML and Markdown parameters never enter the engine.
 
 Envelope fields are protocolVersion (1), requestId, stack (java), operation
@@ -52,3 +53,7 @@ The package manifest declares Java as its language, scan and analyze as its
 operations, and dependencies as its selectable scan fact. A nonempty
 `scan.facts` array selects a report with a `facts` object. Java reports
 `UNSUPPORTED_FACT` and `UNSUPPORTED_OPERATION` as JSON protocol errors.
+
+The Go engine service owns the capability definitions used to generate
+`engine.json`. Both the standalone CLI and the C ABI delegate request validation
+to that service before it invokes the JVM worker.
