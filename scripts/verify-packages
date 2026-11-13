@@ -1,0 +1,81 @@
+#!/bin/sh
+set -eu
+root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+cd "$root"
+check_dir=$(mktemp -d)
+trap 'rm -rf "$check_dir"' EXIT
+os=$(go env GOOS)
+arch=$(go env GOARCH)
+mkdir "$check_dir/tar"
+for suffix in '' '-with-java21'; do
+  name="scryer-java-engine-0.1.0-$os-$arch$suffix"
+  unzip -q "build/distributions/$name.zip" -d "$check_dir/zip"
+  tar -xf "build/distributions/$name.tar.gz" -C "$check_dir/tar"
+done
+python3 - "$check_dir" "$root" "$os" "$arch" <<'PY'
+import ctypes
+import json
+import os
+from pathlib import Path
+import sys
+
+check_dir, root = map(Path, sys.argv[1:3])
+system, arch = sys.argv[3:]
+extension = {"darwin": "dylib", "linux": "so"}[system]
+
+class View(ctypes.Structure):
+    _fields_ = [("data", ctypes.c_char_p), ("size", ctypes.c_size_t)]
+
+class Buffer(ctypes.Structure):
+    _fields_ = [("data", ctypes.c_void_p), ("size", ctypes.c_size_t)]
+
+class Result(ctypes.Structure):
+    _fields_ = [("status", ctypes.c_int32), ("response", Buffer)]
+
+packages = sorted(check_dir.glob("*/*/engine.json"))
+assert len(packages) == 4, packages
+java_home = os.environ.get("JAVA_HOME")
+original_path = os.environ["PATH"]
+for manifest in packages:
+    package = manifest.parent
+    data = json.loads(manifest.read_text())
+    bundled = package.name.endswith("-with-java21")
+    expected = f"bin/libscryer-java-engine.{extension}"
+    assert data["schemaVersion"] == 1 and data["engine"]["id"] == "java"
+    assert data["engine"]["mock"] is False and data["engine"]["protocolVersion"] == 1
+    assert data["library"] == expected and "executable" not in data
+    assert data["os"] == system and data["arch"] == arch
+    assert set((package / "bin").iterdir()) == {package / expected}
+    assert list((package / "lib/java").glob("*.jar"))
+    assert (package / "runtime/bin/java").is_file() == bundled
+    for name in ("SCRYER_ANALYZER_JAVA_HOME", "SCRYER_JAVA_CLASSPATH"):
+        os.environ.pop(name, None)
+    if bundled:
+        os.environ["JAVA_HOME"], os.environ["PATH"] = "/missing-java", "/usr/bin:/bin"
+    else:
+        os.environ["PATH"] = original_path
+        if java_home is None:
+            os.environ.pop("JAVA_HOME", None)
+        else:
+            os.environ["JAVA_HOME"] = java_home
+    library = ctypes.CDLL(str(package / expected))
+    library.execute_v1.argtypes = [View]
+    library.execute_v1.restype = Result
+    library.cancel_v1.argtypes = [View]
+    library.cancel_v1.restype = ctypes.c_bool
+    library.release_buffer_v1.argtypes = [Buffer]
+    library.release_buffer_v1.restype = None
+    request = json.dumps({
+        "protocolVersion": 1, "requestId": "package-check", "stack": "java",
+        "operation": "scan", "scan": {"repository": str(root), "static": True},
+    }).encode()
+    result = library.execute_v1(View(request, len(request)))
+    try:
+        response = json.loads(ctypes.string_at(result.response.data, result.response.size))
+        assert result.status == 0 and response["error"] is None, response
+        assert response["requestId"] == "package-check" and response["report"]["schemaVersion"] == 1
+    finally:
+        library.release_buffer_v1(result.response)
+    print(f"Verified {manifest.parent.parent.name}/{package.name} via C ABI")
+PY
+(cd build/distributions && shasum -a 256 scryer-java-engine-0.1.0-*.zip scryer-java-engine-0.1.0-*.tar.gz > SHA256SUMS)

@@ -12,8 +12,8 @@ import (
 	"time"
 )
 
-// ExecuteAt resolves runtime and jars relative to the launcher or shared library.
-func ExecuteAt(ctx context.Context, installation string, in io.Reader, out, diagnostics io.Writer, ownGroup bool) error {
+// ExecuteAt resolves runtime and jars relative to the shared library.
+func ExecuteAt(ctx context.Context, installation string, in io.Reader, out, diagnostics io.Writer) error {
 	installation, err := filepath.EvalSymlinks(installation)
 	if err != nil {
 		return err
@@ -30,19 +30,12 @@ func ExecuteAt(ctx context.Context, installation string, in io.Reader, out, diag
 		classpath = strings.Join(jars, string(os.PathListSeparator))
 	}
 	executable := javaExecutable(installation, os.Getenv("SCRYER_ANALYZER_JAVA_HOME"), os.Getenv("JAVA_HOME"))
-	return runWorker(ctx, executable, classpath, in, out, diagnostics, ownGroup)
+	return run(ctx, executable, classpath, in, out, diagnostics)
 }
 
 func run(ctx context.Context, executable, classpath string, in io.Reader, out, diagnostics io.Writer) error {
-	return runWorker(ctx, executable, classpath, in, out, diagnostics, false)
-}
-
-func runWorker(ctx context.Context, executable, classpath string, in io.Reader, out, diagnostics io.Writer, ownGroup bool) error {
 	command := exec.CommandContext(ctx, executable, "-cp", classpath, "com.edwardnoaland.scryer.worker.WorkerKt")
-	// The ABI worker owns a separate group. The executable wrapper inherits Core’s group.
-	if ownGroup {
-		configureWorkerGroup(command)
-	}
+	configureWorkerGroup(command)
 	command.Stdin = in
 	command.Stdout = out
 	command.Stderr = diagnostics

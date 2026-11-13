@@ -28,14 +28,6 @@ type Request struct {
 	raw []byte
 }
 
-func ReadRequest(in io.Reader) (Request, error) {
-	data, err := io.ReadAll(io.LimitReader(in, MaxRequestBytes+1))
-	if err != nil {
-		return Request{}, err
-	}
-	return ParseRequest(data)
-}
-
 func ParseRequest(data []byte) (Request, error) {
 	if len(data) > MaxRequestBytes {
 		return Request{}, errors.New("request exceeds 1 MiB")
@@ -48,7 +40,7 @@ func ParseRequest(data []byte) (Request, error) {
 	return request, nil
 }
 
-func (r Request) Execute(ctx context.Context, installation string, out, diagnostics io.Writer, ownGroup bool) error {
+func (r Request) Execute(ctx context.Context, installation string, out, diagnostics io.Writer) error {
 	identity := Describe()
 	code, message := r.validate(identity)
 	if code != "" {
@@ -67,7 +59,7 @@ func (r Request) Execute(ctx context.Context, installation string, out, diagnost
 			Error:           map[string]string{"code": code, "message": message},
 		})
 	}
-	return worker.ExecuteAt(ctx, installation, bytes.NewReader(r.raw), out, diagnostics, ownGroup)
+	return worker.ExecuteAt(ctx, installation, bytes.NewReader(r.raw), out, diagnostics)
 }
 
 func (r Request) validate(identity Identity) (code, message string) {

@@ -1,6 +1,6 @@
 # Scryer Java Engine contributor instructions
 
-Keep the Go executable thin, the CLI/process contract separate from language
+Keep the Go ABI adapter thin, the worker protocol separate from language
 implementation, and all output facts explicit about mock/unsupported behavior.
 Do not import Scryer's internal packages. Kotlin/JVM facts and runtime packaging belong here. Never add Core reporting resources or Kotlin MD/HTML/terminal rendering fixtures.
 Use clear names/branches, English comments and tests named Test_should_xxx_when_xxx.

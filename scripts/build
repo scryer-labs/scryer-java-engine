@@ -3,12 +3,11 @@ set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$root"
 ./gradlew --no-daemon --console=plain -g "$root/.tooling/gradle" --project-cache-dir "$root/.tooling/project-cache" installDist
-mkdir -p build/install/scryer-java-engine/bin build/install/scryer-java-engine/lib/java build/bin
+mkdir -p build/install/scryer-java-engine/bin build/install/scryer-java-engine/lib/java
 rm -f build/install/scryer-java-engine/lib/java/*.jar
 cp build/install/java-worker/lib/*.jar build/install/scryer-java-engine/lib/java/
-go build -trimpath -o build/install/scryer-java-engine/bin/scryer-java-engine.new ./cmd/scryer-java-engine
-mv -f build/install/scryer-java-engine/bin/scryer-java-engine.new build/install/scryer-java-engine/bin/scryer-java-engine
-ln -sfn ../install/scryer-java-engine/bin/scryer-java-engine build/bin/scryer-java-engine
+# Remove standalone launchers left by earlier builds.
+rm -f build/install/scryer-java-engine/bin/scryer-java-engine build/bin/scryer-java-engine
 case "$(go env GOOS)" in
   darwin) extension=dylib ;;
   linux) extension=so ;;
@@ -17,7 +16,7 @@ esac
 library="build/install/scryer-java-engine/bin/libscryer-java-engine.$extension"
 CGO_ENABLED=1 go build -trimpath -buildmode=c-shared -o "$library" ./cmd/java-engine-abi
 rm -f "${library%.*}.h"
-build/install/scryer-java-engine/bin/scryer-java-engine package-manifest > build/install/scryer-java-engine/engine.json
+go run ./scripts/package-manifest > build/install/scryer-java-engine/engine.json
 cp README.md LICENSE build/install/scryer-java-engine/
 # Remove the obsolete JVM-only distribution after the renamed worker was assembled.
 rm -rf build/install/scryer-java

@@ -23,7 +23,6 @@ type Manifest struct {
 	SchemaVersion int          `json:"schemaVersion"`
 	Engine        Identity     `json:"engine"`
 	Library       string       `json:"library,omitempty"`
-	Executable    string       `json:"executable"`
 	OS            string       `json:"os"`
 	Arch          string       `json:"arch"`
 }
@@ -53,7 +52,6 @@ func PackageManifest() Manifest {
 		SchemaVersion: 1,
 		Engine:        Describe(),
 		Library:       libraryPath(),
-		Executable:    "bin/scryer-java-engine",
 		OS:            runtime.GOOS,
 		Arch:          runtime.GOARCH,
 	}

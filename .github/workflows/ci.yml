@@ -41,32 +41,7 @@ jobs:
           ./scripts/package
           ./scripts/package --with-runtime
       - name: "Verify engine packages and isolated bundled runtime"
-        run: |-
-          set -eu
-          package_check_dir=$(mktemp -d)
-          trap 'rm -rf "$package_check_dir"' EXIT
-          os=$(go env GOOS)
-          arch=$(go env GOARCH)
-          for suffix in '' '-with-java21'; do
-            name="scryer-java-engine-0.1.0-$os-$arch$suffix"
-            unzip -q "build/distributions/$name.zip" -d "$package_check_dir/zip"
-            mkdir -p "$package_check_dir/tar"
-            tar -xf "build/distributions/$name.tar.gz" -C "$package_check_dir/tar"
-          done
-          for launcher in "$package_check_dir"/*/*/bin/scryer-java-engine; do
-            "$launcher" describe > "$package_check_dir/identity.json"
-            test -f "$(dirname "$launcher")/../engine.json"
-            python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d["schemaVersion"]==1 and d["engine"]["id"]=="java" and d["executable"]=="bin/scryer-java-engine"' "$(dirname "$launcher")/../engine.json"
-            python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d["id"]=="java" and d["mock"] is False' "$package_check_dir/identity.json"
-            printf '{"protocolVersion":1,"requestId":"package-check","stack":"java","operation":"scan","scan":{"repository":"%s","static":true}}' "$PWD" > "$package_check_dir/request.json"
-            if [ -x "$(dirname "$launcher")/../runtime/bin/java" ]; then
-              env -u SCRYER_ANALYZER_JAVA_HOME -u SCRYER_JAVA_CLASSPATH JAVA_HOME=/missing-java PATH=/usr/bin:/bin "$launcher" execute < "$package_check_dir/request.json" > "$package_check_dir/response.json"
-            else
-              "$launcher" execute < "$package_check_dir/request.json" > "$package_check_dir/response.json"
-            fi
-            python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d["requestId"]=="package-check" and d["error"] is None and d["report"]["schemaVersion"]==1' "$package_check_dir/response.json"
-          done
-          (cd build/distributions && shasum -a 256 scryer-java-engine-0.1.0-*.zip scryer-java-engine-0.1.0-*.tar.gz > SHA256SUMS)
+        run: "./scripts/verify-packages"
       - name: "Upload packages"
         uses: "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
         with:
