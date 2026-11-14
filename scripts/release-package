@@ -12,5 +12,8 @@ trap 'rm -rf "$stage"' EXIT HUP INT TERM
 cp -R build/install/scryer-java-engine/. "$stage/"
 "$JAVA_HOME/bin/jlink" --add-modules ALL-MODULE-PATH --bind-services \
   --no-header-files --no-man-pages --output "$stage/runtime"
+if [ "$os" = windows ]; then
+  objdump -p "$stage/bin/libscryer-java-engine.dll" | grep "DLL Name:"
+fi
 python scripts/check-package.py "$stage"
 python -m zipfile -c "build/releases/scryer-java-engine-$tag-$os-$arch.zip" "$stage"/*

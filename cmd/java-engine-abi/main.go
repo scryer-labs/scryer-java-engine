@@ -7,7 +7,7 @@ package main
 #cgo linux LDFLAGS: -ldl
 #include <stdlib.h>
 #include "scryer_engine_v1.h"
-const char *java_engine_library_path(void);
+char *java_engine_library_path(void);
 */
 import "C"
 
@@ -75,7 +75,9 @@ func execute_v1(input C.scryer_view_v1) C.scryer_result_v1 {
 	if path == nil {
 		err = errors.New("cannot locate Java engine library")
 	} else {
-		err = request.Execute(ctx, C.GoString(path), &output, os.Stderr)
+		libraryPath := C.GoString(path)
+		C.free(unsafe.Pointer(path))
+		err = request.Execute(ctx, libraryPath, &output, os.Stderr)
 	}
 	active.Lock()
 	cancelled := ctx.Err() != nil
