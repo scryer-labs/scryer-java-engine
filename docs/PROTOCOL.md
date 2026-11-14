@@ -16,7 +16,9 @@ Structured errors use code JAVA_ANALYZER_ERROR and a message; report is null.
 A failed target test can instead be a valid report with execution.status FAILED.
 Protocol version and report schemaVersion (1) are independent.
 
-Scan fields: repository (absolute path), static, remoteList, optional buildTool.
+Scan fields include repository (absolute path), optional facts, static,
+remoteList and buildTool. An explicit `facts: ["dependencies"]` returns the
+filtered fact envelope. The legacy scan returns the full Java report.
 Analyze fields: repository, immutable before/after SHAs, beforeRoot/afterRoot,
 optional comparisonRepository, skipTests, optional testCommand and buildTool.
 Core creates/cleans snapshots; engine verifies SHAs and owns Java facts, build/test
@@ -29,8 +31,8 @@ Full report shapes and compatibility validation remain in the
 All existing fields, nullable unknowns, evidence datasets and additive extensions
 must survive transport. There is no presentation layer in this repository.
 
-The library starts the JVM in a separate process group. Core requests
-cancellation through `cancel_v1`, and the worker adapter stops that group.
+On POSIX the library starts and cancels a JVM process group. Core requests
+cancellation through `cancel_v1`. Windows release acceptance covers static scans.
 
 ## Local package metadata
 

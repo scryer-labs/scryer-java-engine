@@ -5,14 +5,27 @@ Independent Go C ABI library and Kotlin/JVM Java fact producer for
 The engine returns JSON only; terminal, Markdown and HTML reports belong to Core.
 It imports no Core internal Go packages and uses no Core report assets.
 
-## Build and run
+## Install and scan
+
+With a current Scryer CLI:
+
+```sh
+scryer engine install java
+scryer engine upgrade java
+scryer project scan /path/to/java-project --facts dependencies --json
+```
+
+Releases for macOS arm64, Windows amd64 and Linux amd64 include Java 21.
+The project's own build and tests may require a different toolchain.
+
+## Build from source
 
 Prerequisites: Go 1.24+, a C compiler for cgo, Java 21 and Git. The included Gradle Wrapper builds Kotlin.
 
 ```sh
 ./scripts/build
 /path/to/scryer engine install java --from "$PWD/build/install/scryer-java-engine"
-/path/to/scryer project scan /path/to/java-project --static --json
+/path/to/scryer project scan /path/to/java-project --facts dependencies --json
 /path/to/scryer project analyze /path/to/java-project --before HEAD~1 --after HEAD
 ```
 
@@ -39,9 +52,6 @@ selection is SCRYER_ANALYZER_JAVA_HOME, bundled runtime, then JAVA_HOME/PATH.
 SCRYER_JAVA_HOME independently selects the target project's JVM. Source builds
 require developer toolchains; a bundled package needs no separately installed Go
 or Java for the engine itself. Target builds/tests may still need their own tools.
-Official releases bundle Java 21 for macOS arm64, Windows amd64 and Linux amd64.
-Use `scryer engine install java` to download the latest release for your platform,
-or `scryer engine upgrade java` to replace an existing installation.
 
 Each built/extracted package now includes engine.json (schemaVersion, identity,
 relative library, OS and architecture). Install the directory through Core:
