@@ -8,15 +8,19 @@ rm -f build/install/scryer-java-engine/lib/java/*.jar
 cp build/install/java-worker/lib/*.jar build/install/scryer-java-engine/lib/java/
 # Remove standalone launchers left by earlier builds.
 rm -f build/install/scryer-java-engine/bin/scryer-java-engine build/bin/scryer-java-engine
+version=${SCRYER_ENGINE_VERSION:-0.0.0-dev}
+case "$version" in *[!0-9A-Za-z.-]*|'') exit 2 ;; esac
+version_flag="-X github.com/scryer-labs/scryer-java-engine/internal/engine.version=$version"
 case "$(go env GOOS)" in
   darwin) extension=dylib ;;
   linux) extension=so ;;
-  *) echo "Java engine ABI build supports macOS and Linux" >&2; exit 1 ;;
+  windows) extension=dll ;;
+  *) echo "Java engine ABI build supports macOS, Linux and Windows" >&2; exit 1 ;;
 esac
 library="build/install/scryer-java-engine/bin/libscryer-java-engine.$extension"
-CGO_ENABLED=1 go build -trimpath -buildmode=c-shared -o "$library" ./cmd/java-engine-abi
+CGO_ENABLED=1 go build -trimpath -ldflags "$version_flag" -buildmode=c-shared -o "$library" ./cmd/java-engine-abi
 rm -f "${library%.*}.h"
-go run ./scripts/package-manifest > build/install/scryer-java-engine/engine.json
+go run -ldflags "$version_flag" ./scripts/package-manifest > build/install/scryer-java-engine/engine.json
 cp README.md LICENSE build/install/scryer-java-engine/
 # Remove the obsolete JVM-only distribution after the renamed worker was assembled.
 rm -rf build/install/scryer-java

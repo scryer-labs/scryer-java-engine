@@ -36,12 +36,14 @@ func capabilities() Capabilities {
 	}
 }
 
+var version = "0.0.0-dev"
+
 func Describe() Identity {
 	return Identity{
 		ProtocolVersion: 1,
 		ID:              "java",
 		Name:            "Scryer Java Engine",
-		Version:         "0.0.0-dev",
+		Version:         version,
 		Source:          "github.com/scryer-labs/scryer-java-engine",
 	}
 }
@@ -61,6 +63,8 @@ func libraryPath() string {
 	switch runtime.GOOS {
 	case "darwin":
 		return "bin/libscryer-java-engine.dylib"
+	case "windows":
+		return "bin/libscryer-java-engine.dll"
 	case "linux":
 		return "bin/libscryer-java-engine.so"
 	default:

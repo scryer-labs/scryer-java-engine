@@ -1,0 +1,16 @@
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/.."
+tag=$1
+export SCRYER_ENGINE_VERSION="${tag#v}"
+./scripts/build
+os=$(go env GOOS)
+arch=$(go env GOARCH)
+mkdir -p build/releases
+stage=$(mktemp -d)
+trap 'rm -rf "$stage"' EXIT HUP INT TERM
+cp -R build/install/scryer-java-engine/. "$stage/"
+"$JAVA_HOME/bin/jlink" --add-modules ALL-MODULE-PATH --bind-services \
+  --no-header-files --no-man-pages --output "$stage/runtime"
+python scripts/check-package.py "$stage"
+python -m zipfile -c "build/releases/scryer-java-engine-$tag-$os-$arch.zip" "$stage"/*

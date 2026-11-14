@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -69,8 +70,12 @@ func Test_should_return_error_when_worker_exits_unsuccessfully(t *testing.T) {
 }
 func Test_should_select_engine_runtime_when_target_java_is_different(t *testing.T) {
 	installation := filepath.Join(t.TempDir(), "bin", "scryer")
-	bundled := filepath.Join(filepath.Dir(installation), "..", "runtime", "bin", "java")
-	if got := javaExecutable(installation, "", "/target-java8"); got != "/target-java8/bin/java" {
+	name := "java"
+	if runtime.GOOS == "windows" {
+		name += ".exe"
+	}
+	bundled := filepath.Join(filepath.Dir(installation), "..", "runtime", "bin", name)
+	if got := javaExecutable(installation, "", "/target-java8"); got != filepath.Join("/target-java8", "bin", name) {
 		t.Fatal(got)
 	}
 	if err := os.MkdirAll(filepath.Dir(bundled), 0755); err != nil {
@@ -82,7 +87,7 @@ func Test_should_select_engine_runtime_when_target_java_is_different(t *testing.
 	if got := javaExecutable(installation, "", "/target-java8"); got != bundled {
 		t.Fatal(got)
 	}
-	if got := javaExecutable(installation, "/explicit-java21", "/target-java8"); got != "/explicit-java21/bin/java" {
+	if got := javaExecutable(installation, "/explicit-java21", "/target-java8"); got != filepath.Join("/explicit-java21", "bin", name) {
 		t.Fatal(got)
 	}
 }

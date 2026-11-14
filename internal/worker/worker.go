@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -51,15 +52,19 @@ func run(ctx context.Context, executable, classpath string, in io.Reader, out, d
 
 // The analyzer runtime is separate from a target project's build/test toolchain.
 func javaExecutable(installation, overrideHome, javaHome string) string {
-	if overrideHome != "" {
-		return filepath.Join(overrideHome, "bin", "java")
+	name := "java"
+	if runtime.GOOS == "windows" {
+		name += ".exe"
 	}
-	bundled := filepath.Join(filepath.Dir(installation), "..", "runtime", "bin", "java")
+	if overrideHome != "" {
+		return filepath.Join(overrideHome, "bin", name)
+	}
+	bundled := filepath.Join(filepath.Dir(installation), "..", "runtime", "bin", name)
 	if info, err := os.Stat(bundled); err == nil && !info.IsDir() {
 		return bundled
 	}
 	if javaHome != "" {
-		return filepath.Join(javaHome, "bin", "java")
+		return filepath.Join(javaHome, "bin", name)
 	}
-	return "java"
+	return name
 }
