@@ -39,7 +39,9 @@ selection is SCRYER_ANALYZER_JAVA_HOME, bundled runtime, then JAVA_HOME/PATH.
 SCRYER_JAVA_HOME independently selects the target project's JVM. Source builds
 require developer toolchains; a bundled package needs no separately installed Go
 or Java for the engine itself. Target builds/tests may still need their own tools.
-GitHub Release publishing and release/source installation remain future work.
+Official releases bundle Java 21 for macOS arm64, Windows amd64 and Linux amd64.
+Use `scryer engine install java` to download the latest release for your platform,
+or `scryer engine upgrade java` to replace an existing installation.
 
 Each built/extracted package now includes engine.json (schemaVersion, identity,
 relative library, OS and architecture). Install the directory through Core:
@@ -64,5 +66,5 @@ build and both package checks. Core and engine plans run before their workspace
 integration plan. See [AGENTS.md](AGENTS.md) and [protocol](docs/PROTOCOL.md).
 Kotlin contains no legacy command/rendering fixtures or MD/HTML report resources.
 
-Core calls the engine through the C ABI. The library starts the JVM in its
-own process group and cancels that group when Core requests cancellation.
+Core calls the engine through the C ABI. The library starts the JVM as a child
+process. On Unix it cancels the JVM process group when Core requests cancellation.
