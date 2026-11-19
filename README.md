@@ -65,9 +65,25 @@ scryer engine uninstall java
 
 Core copies the complete package into ~/.config/scryer by default (including on
 macOS), with an optional SCRYER_HOME override; installed
-operation no longer depends on the source checkout or a path override. Existing
-installs require uninstall before reinstalling. Install/list/uninstall are persistent.
+operation no longer depends on the source checkout or a path override. Use `scryer engine upgrade java` for official release updates.
+Install/list/uninstall are persistent.
 The build generates `engine.json` from the engine's identity and capabilities.
+
+## Known gaps and deferred work
+
+- Selectable scan facts currently expose `dependencies`. Architecture, files,
+  call-graph and IPC do not have the modern filtered-fact contract in this engine.
+- Java retains the legacy combined `analyze` operation. Separate `coverage` and
+  `impact` operations, the new native multi-engine analysis flow and its
+  `--resolve` lifecycle have not been ported to Java.
+- Existing analysis consumes configured JUnit/JaCoCo evidence; it does not inject
+  coverage instrumentation into an unconfigured project. Aggregate evidence does
+  not establish individual-test attribution or assertion effectiveness.
+- Missing classpaths/types, generated code, reflection/DI wiring and dynamic
+  dispatch can leave source boundaries. Java workspace dependency matching and
+  test-effectiveness/code-smell rules are deferred.
+- Windows release checks cover installation and static scanning, not full native
+  target builds/tests or process-tree cancellation acceptance.
 
 ## Verification and boundaries
 
